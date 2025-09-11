@@ -1,0 +1,36 @@
+services:
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable
+    container_name: litellm
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    environment:
+      LITELLM_MASTER_KEY: "sk-local-my-supersecret-key"   # Enter this in Open WebUI: Settings → Admin Settings → Connections → OpenAI → Add Connection:
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+    command: ["--config", "/app/config.yaml"]
+    volumes:
+      - ./litellm-config.yaml:/app/config.yaml:ro
+    restart: unless-stopped
+
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:latest
+    container_name: openwebui
+    ports:
+      - "3000:8080"
+    env_file:
+      - .env
+    environment:
+      ENABLE_OPENAI_API: "true"          # allows OpenAI connections
+      WEBUI_URL: "${WEBUI_URL:-http://localhost:3000}"
+      # Vector DB (default is chroma). 
+      VECTOR_DB: "chroma"
+    volumes:
+      - openwebui-data:/app/backend/data  # persists chats, knowledge, vector db, etc. it will be created at the first run
+    depends_on:
+      - litellm
+    restart: unless-stopped
+
+volumes:
+  openwebui-data:

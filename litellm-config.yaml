@@ -1,0 +1,65 @@
+model_list:
+  # --- Chat / multimodal (stable) ---
+  - model_name: gemini-2.5-pro
+    litellm_params:
+      model: gemini/gemini-2.5-pro
+ 
+
+  - model_name: gemini-2.5-flash
+    litellm_params:
+      model: gemini/gemini-2.5-flash
+ 
+
+  - model_name: gemini-1.5-pro
+    litellm_params:
+      model: gemini/gemini-1.5-pro
+ 
+
+  - model_name: gemini-1.5-flash
+    litellm_params:
+      model: gemini/gemini-1.5-flash
+ 
+
+  - model_name: gemini-1.5-flash-8b
+    litellm_params:
+      model: gemini/gemini-1.5-flash-8b
+ 
+
+  # --- optional
+  - model_name: gemini-1.5-pro-latest
+    litellm_params:
+      model: gemini/gemini-1.5-pro-latest
+ 
+
+  - model_name: gemini-1.5-flash-latest
+    litellm_params:
+      model: gemini/gemini-1.5-flash-latest
+ 
+
+  - model_name: gemini-2.5-pro-preview-06-05
+    litellm_params:
+      model: gemini/gemini-2.5-pro-preview-06-05
+ 
+
+  - model_name: gemini-2.5-flash-preview-05-20
+    litellm_params:
+      model: gemini/gemini-2.5-flash-preview-05-20
+ 
+
+  # --- Embeddings (use this for RAG) ---
+  - model_name: text-embedding-004
+    litellm_params:
+      model: gemini/text-embedding-004
+ 
+ 
+  # (Optional legacy/extra embeddings from your list)
+  - model_name: gemini-embedding-001
+    litellm_params:
+      model: gemini/gemini-embedding-001
+ 
+
+  # --- (Optional) Gemma via AI Studio (chat) ---
+  - model_name: gemma-3-27b-it
+    litellm_params:
+      model: gemini/gemma-3-27b-it
+ 
