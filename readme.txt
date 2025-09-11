@@ -1,3 +1,5 @@
+This project is licensed under the Apache License 2.0.
+
 1. Create an .env file in the project root directory with your api keys, take extra care that no spaces will be put after the last character of the keys
     e.g.
     OPENAI_API_KEY=sk-...                 # from https://platform.openai.com
