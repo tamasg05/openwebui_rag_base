@@ -52,7 +52,7 @@ model_list:
       model: gemini/text-embedding-004
  
  
-  # (Optional legacy/extra embeddings from your list)
+  # (Optional legacy/extra embedding
   - model_name: gemini-embedding-001
     litellm_params:
       model: gemini/gemini-embedding-001

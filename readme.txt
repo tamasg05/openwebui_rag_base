@@ -1,4 +1,4 @@
-This project is licensed under the Apache License 2.0.
+This project is licensed under the Apache License 2.0, 2025 tamasg05.
 
 1. Create an .env file in the project root directory with your api keys, take extra care that no spaces will be put after the last character of the keys
     e.g.
@@ -9,6 +9,8 @@ This project is licensed under the Apache License 2.0.
     Execute the following command in the project's root folder:
         docker compose up -d
         this will download OpenWebUI and LiteLLM. The latter is set up as a proxy for non-OpenAI models.
+
+        The yaml files I annotated with comments, if you wish to change something. Change the LITELLM_MASTER_KEY, if you use OpenWebUI and LiteLLM in the cloud or anywhere else but not in your private environment.
 
 3. Open http://localhost:3000
     create an admin account and log in
@@ -36,7 +38,7 @@ This project is licensed under the Apache License 2.0.
         to test whether the models are listed for which LiteLLM works as a proxy
             curl -X GET http://localhost:4000/v1/models -H "Authorization: Bearer sk-local-my-supersecret-key"
 
-6. Add LiteLLM as a connection 
+6. Add LiteLLM as a connection  in OpenWebUI
     Settings (in the bottom left corner) → Admin Panel → Settings → Connections → OpenAI → Add Connection
     Go to the section OpenAI API
         Add the following URL and your LiteLLM api key you specified in docker-compose.yaml
@@ -51,7 +53,7 @@ This project is licensed under the Apache License 2.0.
         In the Embedding Model Engine section, select OpenAI (also for non-OpenAI models)
             If you want to use a non-OpenAI model, then
                 (1) set the model url to LiteLLM: http://litellm:4000
-                (2) set the api key for LiteLLM specified in the docker-compose.yaml: sk-local-my-supersecret-key
+                (2) set the api key for LiteLLM specified in the docker-compose.yaml
                 (3) specify an embedding model, e.g. text-embedding-004 from Google
         Specify the chunk length and overlap
         Specify how many chunks shall be returned and added to the context
