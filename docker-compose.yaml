@@ -9,6 +9,8 @@ services:
     environment:
       LITELLM_MASTER_KEY: "sk-local-my-supersecret-key"   # Enter this in Open WebUI: Settings → Admin Settings → Connections → OpenAI → Add Connection:
       GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY}
     command: ["--config", "/app/config.yaml"]
     volumes:
       - ./litellm-config.yaml:/app/config.yaml:ro
