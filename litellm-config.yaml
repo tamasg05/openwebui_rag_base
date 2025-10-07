@@ -50,13 +50,11 @@ model_list:
   - model_name: text-embedding-004
     litellm_params:
       model: gemini/text-embedding-004
-      temperature: 0.2
 
   # (Optional legacy/extra embedding)
   - model_name: gemini-embedding-001
     litellm_params:
       model: gemini/gemini-embedding-001
-      temperature: 0.2
 
   # --- (Optional) Gemma via AI Studio (chat) ---
   - model_name: gemma-3-27b-it
