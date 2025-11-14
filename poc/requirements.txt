@@ -1,0 +1,4 @@
+deepeval==3.6.7
+requests
+ragas==0.3.8
+openai==1.40.0

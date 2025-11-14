@@ -1,1 +1,13 @@
+# === Environment settings 
 .env
+
+# === Python cache & tests ===
+__pycache__/
+.deepeval/
+.pytest_cache/
+
+# === Virtual environments ===
+ragtest_venv/
+
+# === Ignoring log files ===
+*.log

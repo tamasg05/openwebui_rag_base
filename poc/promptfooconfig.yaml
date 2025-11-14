@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://promptfoo.dev/config-schema.json
+# Learning more about building a configuration: https://promptfoo.dev/docs/configuration/guide
+
+description: "Testing Promptfoo"
+
+prompts:
+  - "Answer the following query:{{query}} based on the following context: {{context}}. \n If you cannot find any relevant information in the context, say so, and do not make up anything. Be short, factual and to the point but use friendly and emphatic language."
+  
+
+providers:
+# comparing models
+  - "openai:gpt-5"
+  - "google:gemini-2.5-pro"
+  
+# Assertions and available metrics are listed here: https://www.promptfoo.dev/docs/configuration/expected-outputs/
+# 
+# Metric definitions:
+# Context Recall = (attributable statements among the retrieved chunks with regard to the expected answer value)/ (total statements in the expected answer value)
+# Context Relevance = (required sentences to answer the query) / (total sentences in the context)
+# Context Faithfulness = (Supported claims by the retrieved chunks in the actual answer)/(Total claims in the actual answer)
+# Factuality: it shows how consistent the actual answer with the expected answer is. No direct computation is provided on the home page as of now.
+
+tests:
+  - vars:
+      query: "How much does an Opel Astra cost?"
+      context: file://promptfoo_context.py
+    assert:
+      - type: context-faithfulness
+        threshold: 0.8
+      - type: context-relevance
+        threshold: 0.2
+      - type: factuality
+        value: "The Opel Astra price is about 9M HUF in the 2024 price listings."
+      # For more information on model-graded evals, see https://promptfoo.dev/docs/configuration/expected-outputs/model-graded
+      - type: llm-rubric
+        value: ensure that the output is concise and possibly friendly as far as the response's length allows.
+      - type: llm-rubric
+        metric: context_recall_wa
+        threshold: 0.7
+        value: "The Opel Astra price is about 9M HUF in the 2024 price listings."
+        prompt: |
+          You are grading whether the claim is explicitly supported by the provided context.
+
+          Claim:
+          {{ value }}
+
+          Context:
+          {% if vars.context.output %}{{ vars.context.output }}{% else %}{{ vars.context }}{% endif %}
+
+          Model answer:
+          {{ output }}
+
+          Return ONLY a single-line JSON object:
+          {"score": <0..1>, "reason": "<short explanation>"}
+          Give a high score if yes, low if not, and use any value in the range [0..1].
+
+  - vars:
+      query: "How big is the luggage rack of an Opel Astra?"
+      context: file://promptfoo_context.py
+    assert:
+      - type: context-faithfulness
+        threshold: 0.8
+      - type: context-relevance
+        threshold: 0.2
+      - type: factuality
+        value: "Its luggage rack is 300 liters."
+      - type: llm-rubric
+        value: ensure that the output is concise and possibly friendly as far as the response's length allows.
+      - type: llm-rubric
+        metric: context_recall_wa
+        threshold: 0.7
+        value: "Its luggage rack is 300 liters."
+        prompt: |
+          You are grading whether the claim is explicitly supported by the provided context.
+
+          Claim:
+          {{ value }}
+
+          Context:
+          {% if vars.context.output %}{{ vars.context.output }}{% else %}{{ vars.context }}{% endif %}
+
+          Model answer:
+          {{ output }}
+
+          Return ONLY a single-line JSON object:
+          {"score": <0..1>, "reason": "<short explanation>"}
+          Give a high score if yes, low if not, and use any value in the range [0..1].

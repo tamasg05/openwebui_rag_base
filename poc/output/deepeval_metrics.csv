@@ -1,0 +1,3 @@
+,query,expected_answer,actual_answer,contextual_recall,contextual_precision,contextual_relevancy,faithfulness
+0,How much does an Opel Astra cost?,The Opel Astra price is about 9M HUF in the 2024 price listings.,The Opel Astra costs around 9M HUF according to 2024 listings.,1.0,0.5833333333333333,0.4,1.0
+1,How big is the luggage rack of an Opel Astra?,The luggage rack of an Opel Astra amounts 300 liters.,The luggage rack is about 300 liters.,1.0,0.25,0.2,1.0
