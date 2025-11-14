@@ -66,5 +66,5 @@ This project is licensed under the Apache License 2.0, 2025 tamasg05.
     Go to the front page, select New Chat 
         In the chat window, you can reference your collection with a hash-tag e.g. #test means the collection named test, and you can ask questions that will be answered based on the collection by the model you selected.
 
-
+9. In the subdirectory ./poc, it is demonstrated how to measure and assess RAG quality with tools such as DeepEval, RAGAS, Promptfoo. See the readme.txt in ./poc for further information.
 
