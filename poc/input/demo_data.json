@@ -1,0 +1,30 @@
+{
+  "records" : [ {
+    "query" : "How much does an Opel Astra cost?",
+    "chunks" : [
+        "Opel is a car.",
+        "The price of Opel Astra depends on the regional markets.",
+        "The Opel Astra price is about 9M HUF in the 2024 price listings.",
+        "Its luggage rack is 300 liters.",
+        "The Gellert Hill is in Budapest."
+    ],
+    "reference_response" : "The Opel Astra price is about 9M HUF in the 2024 price listings.",
+    "actual_response" : "The Opel Astra costs around 9M HUF according to 2024 listings."
+  },
+  {
+    "query" : "How big is the luggage rack of an Opel Astra?",
+    "chunks" : [
+        "Opel is a car.",
+        "The price of Opel Astra depends on the regional markets.",
+        "The Opel Astra price is about 9M HUF in the 2024 price listings.",
+        "Its luggage rack is 300 liters.",
+        "The Gellert Hill is in Budapest."
+    ],
+    "reference_response" : "The luggage rack of an Opel Astra amounts 300 liters.",
+    "actual_response" : "The luggage rack is about 300 liters."
+  }
+],
+  "topK" : 10,
+  "temperature" : 0.5,
+  "model" : "gpt-5.1-2025-11-13"
+}

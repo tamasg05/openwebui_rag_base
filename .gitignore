@@ -9,5 +9,10 @@ __pycache__/
 # === Virtual environments ===
 ragtest_venv/
 
-# === Ignoring log files ===
+# === Ignoring log files and open file locks ===
 *.log
+.~lock.*.csv#
+
+# === Excluding real data
+real_data.json
+

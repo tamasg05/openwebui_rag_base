@@ -3,9 +3,13 @@ The proof of concept had the following goals:
 -reproducibility: the tests were performed with a fixed set of document chunks to see whether the metrics change if the same tests are repeated, i.e. the chunks do not come from vector stores. Nevertheless, demo_query_to_openwebuicollection.py demonstrates how to connect an existing OpenWeb UI application through an API key from where the RAG chunks could also be retrieved.
 
 Setting up the environment:
-1.) Creating a virtual environment:
+1.a) Creating a virtual environment:
+    cd poc
     python -m venv ragtest_venv
+
+1.b) Activating the virtual environment
     . ./ragtest_venv/Scripts/activate
+    You need to activate this environment each time you use the tools
 
 2.) Installing necessary libraries:
     pip install -r requirements.txt 
@@ -25,7 +29,7 @@ Setting up the environment:
     It will produce an output table in csv in ./output/deepeval_metrics.csv. If the directory does not exist, the script will create it.
 
 7.) Running the RAGAS application
-    It is a plain python app, you can run it from the command line or IDE, it wil produce an output table in csv in ./output/ragas_per_row_metrics.csv. If the directory does not exist, the script will create it.
+    It is a plain python app, you can run it from the command line or IDE, it wil produce an output table in json in ./output/ragas_per_row_metrics.json and reads the input from ./input/demo_data.json. If the output directory does not exist, the script will create it. The csv output type was changed to json as the LLM can produce several-line answers with commas.
 
 Take care as the different tools can compute the metrics: recall, precision, faithfulness and factual_correctness in a different manner. See the comments added to the code.
 
@@ -49,6 +53,7 @@ DeepEval:
 RAGAS:
     -Considers typos in an appropriate manner: Opel Astra vs. Open Astra in the retrieved chunks and in the actual answer: faithfulness: 1.0
     -Context relevance: a custom metric needs to be set up if necessary
+                        it is demonstrated how to define and use a custom metric that computes the context relevance.
     -Precision: ranking based
 
 Promptfoo:

@@ -1,0 +1,20 @@
+[
+  {
+    "user_input":"How big is the luggage rack of an Opel Astra?",
+    "response":"The luggage rack is about 300 liters.",
+    "reference":"The luggage rack of an Opel Astra amounts 300 liters.",
+    "context_recall":1.0,
+    "contextual_relevancy":0.2,
+    "faithfulness":1.0,
+    "factual_correctness(mode=f1)":0.67
+  },
+  {
+    "user_input":"How much does an Opel Astra cost?",
+    "response":"The Opel Astra costs around 9M HUF according to 2024 listings.",
+    "reference":"The Opel Astra price is about 9M HUF in the 2024 price listings.",
+    "context_recall":1.0,
+    "contextual_relevancy":0.4,
+    "faithfulness":1.0,
+    "factual_correctness(mode=f1)":1.0
+  }
+]
