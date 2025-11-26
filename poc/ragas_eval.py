@@ -76,6 +76,8 @@ evaluation_dataset = EvaluationDataset.from_list(dataset)
 #       If the actual answer has 3 claims but only 2 of them can be supported by the retrieved document chunks, then faithfulness = 2/3
 
 # FactualCorrectness = F1 score = 2 * Precision * Recall / (Precision + Recall) with regard to the expected response as reference; harmonic mean penalizes models that do well on the one metric but poorly on the other.
+#       The metric is also added for the factual precision and factual recall, see the code below.
+#
 #       It shows the correctness of information in the actual answer.
 #
 #       For each claim, an LLM compares them and counts:
@@ -86,6 +88,7 @@ evaluation_dataset = EvaluationDataset.from_list(dataset)
 #       Then ragas calculates one or more of:
 #       Precision = TP / (TP + FP)
 #       Recall    = TP / (TP + FN)
+#       
 
 # If the dataset contains several queries, with the context chunks retrieved, the actual and the expected answers, then the evaluation is done individually, and finally the arithmetic mean is computed, if the result is printed as print(result).
 # If the computation of one metric fails, an NaN value will appear (raise_exceptions=False) and the computation goes on.
@@ -209,6 +212,8 @@ result = evaluate(dataset=evaluation_dataset,
                   metrics=[LLMContextRecall(), 
                            ContextualRelevancy(),
                            Faithfulness(), 
+                           FactualCorrectness(name="factual_precision", mode="precision"),
+                           FactualCorrectness(name="factual_recall",mode="recall"),
                            FactualCorrectness()],
                   llm=judge,
                   raise_exceptions=False)
