@@ -2,4 +2,6 @@ deepeval==3.6.7
 requests
 ragas==0.3.8
 openai==1.40.0
+langchain-google-genai==4.0.0
 pydantic>=2,<3
+matplotlib

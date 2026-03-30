@@ -1,5 +1,11 @@
+from pydantic import SecretStr
+from pydantic import BaseModel, Field
+from dataclasses import dataclass, field
+from typing import Dict, Set
+
 from pathlib import Path
 from dotenv import load_dotenv
+import json, os
 
 from ragas import evaluate
 from ragas.metrics import LLMContextRecall, Faithfulness, FactualCorrectness, ContextPrecision
@@ -7,98 +13,78 @@ from ragas import EvaluationDataset
 from ragas.llms import LangchainLLMWrapper 
 from langchain_openai import ChatOpenAI
 
-from dataclasses import dataclass, field
-from typing import Dict, Set
-import json
-
-from pydantic import BaseModel, Field
 from ragas.prompt import PydanticPrompt
 from ragas.metrics.base import MetricWithLLM, SingleTurnMetric, MetricType
 
 OUT_FILE = "./output/ragas_per_row_metrics.json"
 INPUT_FILE = "./input/demo_data.json"
 
-MODEL = "gpt-5-chat-latest"
-
-# Setting environment variables from .env
-load_dotenv()
-
-# Loading evaluation data from JSON file
-with open(INPUT_FILE, "r", encoding="utf-8") as f:
-    demo_data = json.load(f)
-
-records = demo_data.get("records", [])
-
-# OPENAI_API_KEY api key needs to be set as an environment variable, see .env file
-llm = ChatOpenAI(model=MODEL, 
-                 temperature=0,
-                 request_timeout=120, # timeout in sec
-                 max_retries=2,
-                ) 
-judge = LangchainLLMWrapper(llm)
-
-
-# Building the dataset from JSON records
-dataset = []
-
-for rec in records:
-    query = rec["query"]
-    chunks = rec["chunks"]
-    reference = rec["reference_response"]
-    answer = rec["actual_response"]
-
-    dataset.append(
-        {
-            "user_input": query,
-            "retrieved_contexts": chunks,
-            "response": answer,
-            "reference": reference,
-        }
-    )
-
-evaluation_dataset = EvaluationDataset.from_list(dataset)
-
-# Metrics
-# ContextRecall  = (number of claims supported by the retrieved document chunks in the expected response)/ (total number of claims in the expected response)
-#        It shows to which extent the ground truth claims were supported by the retrieved document chunks
-
-# ContextPrecision (ranking based) = average( number of relevant chunks up to rank k / k )
-#        It shows how clean the retrieval was with regard to the ranking of the retrieved chunks 
-#        If there is 1 relevant chunk of 4 but the relevant chunk is at the first position, then precision = 1
-#        If there is 1 relevant chunk of 4 but the relevant chunk is at the third position, then precision = 1/3
-
-# ContextualRelevancy: Not available in RAGAS but a custom evaluator can be set up. (Different compared to DeepEval, and Promptfoo.)
-#       See the below custom metric definition. 
-#       Contextual relevancy = (number of relevant chunks with regard to the query) / (total number of retrieved chunks, i.e. K)
-
-# Faithfulness = (number of supported claims in the actual answer with regard to the retrieved document chunks) / (total number of claims in the actual answer) 
-#       It shows hallucination or unsupported claims with regard to the retrieved data.
-#       If the actual answer has 3 claims but only 2 of them can be supported by the retrieved document chunks, then faithfulness = 2/3
-
-# FactualCorrectness = F1 score = 2 * Precision * Recall / (Precision + Recall) with regard to the expected response as reference; harmonic mean penalizes models that do well on the one metric but poorly on the other.
-#       The metric is also added for the factual precision and factual recall, see the code below.
+MODEL = "gpt-5.1-2025-11-13"
+DEBUG_KEY_SLICE = 12
+# ---------------------------------------------------------------------------
+# For debugging the LLM configuration
 #
-#       It shows the correctness of information in the actual answer.
-#
-#       For each claim, an LLM compares them and counts:
-#       TP (true positive): claims in both the model’s answer and the reference.
-#       FP (false positive): claims in the model’s answer but not in the reference.
-#       FN (false negative): claims in the reference but missing from the model’s answer.
-#
-#       Then ragas calculates one or more of:
-#       Precision = TP / (TP + FP)
-#       Recall    = TP / (TP + FN)
-#       
+def debug_api_env():
+    env_key = os.getenv("OPENAI_API_KEY")
+    if env_key:
+        print("[DEBUG] Env OPENAI_API_KEY prefix:", env_key[:DEBUG_KEY_SLICE] + "...")
+    else:
+        print("[DEBUG] Env OPENAI_API_KEY is NOT set!")
 
-# If the dataset contains several queries, with the context chunks retrieved, the actual and the expected answers, then the evaluation is done individually, and finally the arithmetic mean is computed, if the result is printed as print(result).
-# If the computation of one metric fails, an NaN value will appear (raise_exceptions=False) and the computation goes on.
+def _mask_key(key) -> str:
+    """
+    Safely turn an API key (or SecretStr) into a short masked string for logging.
+    """
+    if key is None:
+        return "None"
+
+    # If it's a pydantic SecretStr (used by langchain_openai)
+    if isinstance(key, SecretStr):
+        value = key.get_secret_value() or ""
+    else:
+        value = str(key)
+
+    if not value:
+        return "None"
+
+    # Only show first chars
+    return value[:DEBUG_KEY_SLICE] + "..."
 
 
+def debug_llm_config(llm_obj):
+    # Trying common attribute names in different langchain_openai versions
+    key = None
 
+    # Newer langchain_openai – ChatOpenAI.api_key (SecretStr)
+    if hasattr(llm_obj, "api_key"):
+        key = llm_obj.api_key
+
+    # Older LangChain – openai_api_key
+    if key is None and hasattr(llm_obj, "openai_api_key"):
+        key = llm_obj.openai_api_key
+
+    # New OpenAI client on llm.client
+    if key is None and hasattr(llm_obj, "client"):
+        client = llm_obj.client
+        if hasattr(client, "api_key"):
+            key = client.api_key
+
+    masked = _mask_key(key)
+    print("[DEBUG] LLM API key prefix:", masked)
+
+    # Base URL (if any)
+    base_url = None
+    if hasattr(llm_obj, "base_url"):
+        base_url = llm_obj.base_url
+    elif hasattr(llm_obj, "client") and hasattr(llm_obj.client, "base_url"):
+        base_url = str(llm_obj.client.base_url)
+
+    print("[DEBUG] LLM base_url:", base_url or "(default api.openai.com)")
+
+# --------------------------------------------------------------------------
 # Custom metric definition:
 # Pydantic models for the LLM prompt (for data types and validation)
 # It is necessary for the custom metric definition: contextual relevancy
-
 class AllChunksRelevancyInput(BaseModel):
     user_input: str = Field(description="The user query")
     chunks: list[str] = Field(
@@ -206,7 +192,84 @@ class ContextualRelevancy(MetricWithLLM, SingleTurnMetric):
 
         return relevant_count / total
 
+# -------------------------------------------------------------------
+# Starting execution:
+# Setting environment variables from .env
+load_dotenv()
+debug_api_env()
 
+# Loading evaluation data from JSON file
+with open(INPUT_FILE, "r", encoding="utf-8") as f:
+    demo_data = json.load(f)
+
+records = demo_data.get("records", [])
+
+# OPENAI_API_KEY api key needs to be set as an environment variable, see .env file
+llm = ChatOpenAI(model=MODEL, 
+                 temperature=0,
+                 request_timeout=120, # timeout in sec
+                 max_retries=2,
+                 api_key=os.getenv("OPENAI_API_KEY")) 
+
+debug_llm_config(llm)
+
+judge = LangchainLLMWrapper(llm)
+
+
+# Building the dataset from JSON records
+dataset = []
+
+for rec in records:
+    query = rec["query"]
+    chunks = rec["chunks"]
+    reference = rec["reference_response"]
+    answer = rec["actual_response"]
+
+    dataset.append(
+        {
+            "user_input": query,
+            "retrieved_contexts": chunks,
+            "response": answer,
+            "reference": reference,
+        }
+    )
+
+evaluation_dataset = EvaluationDataset.from_list(dataset)
+
+# Metrics
+# ContextRecall  = (number of claims supported by the retrieved document chunks in the expected response)/ (total number of claims in the expected response)
+#        It shows to which extent the ground truth claims were supported by the retrieved document chunks
+
+# ContextPrecision (ranking based) = average( number of relevant chunks up to rank k / k )
+#        It shows how clean the retrieval was with regard to the ranking of the retrieved chunks 
+#        If there is 1 relevant chunk of 4 but the relevant chunk is at the first position, then precision = 1
+#        If there is 1 relevant chunk of 4 but the relevant chunk is at the third position, then precision = 1/3
+
+# ContextualRelevancy: Not available in RAGAS but a custom evaluator can be set up. (Different compared to DeepEval, and Promptfoo.)
+#       See the below custom metric definition. 
+#       Contextual relevancy = (number of relevant chunks with regard to the query) / (total number of retrieved chunks, i.e. K)
+
+# Faithfulness = (number of supported claims in the actual answer with regard to the retrieved document chunks) / (total number of claims in the actual answer) 
+#       It shows hallucination or unsupported claims with regard to the retrieved data.
+#       If the actual answer has 3 claims but only 2 of them can be supported by the retrieved document chunks, then faithfulness = 2/3
+
+# FactualCorrectness = F1 score = 2 * Precision * Recall / (Precision + Recall) with regard to the expected response as reference; harmonic mean penalizes models that do well on the one metric but poorly on the other.
+#       The metric is also added for the factual precision and factual recall, see the code below.
+#
+#       It shows the correctness of information in the actual answer.
+#
+#       For each claim, an LLM compares them and counts:
+#       TP (true positive): claims in both the model’s answer and the reference.
+#       FP (false positive): claims in the model’s answer but not in the reference.
+#       FN (false negative): claims in the reference but missing from the model’s answer.
+#
+#       Then ragas calculates one or more of:
+#       Precision = TP / (TP + FP)
+#       Recall    = TP / (TP + FN)
+#       
+
+# If the dataset contains several queries, with the context chunks retrieved, the actual and the expected answers, then the evaluation is done individually, and finally the arithmetic mean is computed, if the result is printed as print(result).
+# If the computation of one metric fails, an NaN value will appear (raise_exceptions=False) and the computation goes on.
 
 result = evaluate(dataset=evaluation_dataset,
                   metrics=[LLMContextRecall(), 

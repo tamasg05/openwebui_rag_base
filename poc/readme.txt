@@ -46,8 +46,8 @@ Take care as the different tools can compute the metrics: recall, precision, fai
         g.) promptfoo view (to generate the report)
 
 DeepEval:
-    -Very strict by default: Opel Astra vs. Open Astra in the retrieved chunks and in the actual answer: faithfulness: 0.
-    -Can give reason for each metric's judgement
+    -Very strict by default: Opel Astra vs. Open Astra in the retrieved chunks and in the actual answer: faithfulness: 0
+    -Can give a reason for each metric's judgement
     -Precision: ranking based
 
 RAGAS:
@@ -60,7 +60,7 @@ Promptfoo:
     -Several models and prompts can be evaluated in 1 configuration in one go.
     -Precision: not available by default
     -Context relevance: Not ranking based, it shows the ratio of the useful and the retrieved data in the context.
-    -Context Recall: contradiction with DeepEval and RAGAS results
+    -Context Recall: contradiction with DeepEval and RAGAS results using the same LLM
         promptfoo context recall:
             score: 0.11
             expected answer: "The Opel Astra price is about 9M HUF in the 2024 price listings."
@@ -76,4 +76,8 @@ Promptfoo:
     -Possibility to make new metrics very easily
         -As a demonstration, see the workaround for the context recall metric and named it as context_recall_wa
 
+In conclusion, we need a tool that can evaluate the output of our software after the data processing takes place in the software under evaluation. From this respect, RAGAS would qualify as we can make it evaluate the software's output and create the quality metrics. Nevertheless, we experienced several difficulties with RAGAS including: (1) high-token consumption by the LLM, resulting in higher costs, (2) rate limiters at the LLM's side produce exceptions due to the heavy load. For these reasons the compute_relevant_chunks.py script was developed that computes all the necessary metrics including the number of the relevant chunks, using fuzzy sets, i.e. a membership value is computed for the given metrics. 
 
+The new script cut the costs to approx. 5% compared to the RAGAS script's costs and helped to avoid the rate limiter exceptions. In addition the number of relevant chunks are computed with a threshold value set in the script for classifying the relevance scores which represent a fuzzy membership value. The compute_relevant_chunks.py script's expected input is documented in the script. For each input json file an output json file is produced and a line in the summary CSV file with the metrics. The script's switches are also documented and a help is available with the --help switch.
+
+The script create_charts2.py creates the visual representations of the metrics assuming the test runs happen with different temperature and topk combinations in the software under evaluation. The script compute_relevant_chunks.py uses temperature=0 for decreasing the stochastic nature of the LLM responses.

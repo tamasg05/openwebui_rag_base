@@ -13,6 +13,16 @@ ragtest_venv/
 *.log
 .~lock.*.csv#
 
-# === Excluding real data
+# === Excluding test runs and real data in the proof of concept
 real_data.json
 
+input/
+output/
+output2/
+ids/
+
+# === Excluding scripts not relevant for the demo
+ragas_eval_large_amount_of_data.py
+ragas_eval_large_amount_of_data2.py
+compare_chunk_ids.py
+test_api.py
