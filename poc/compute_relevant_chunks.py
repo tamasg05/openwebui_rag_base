@@ -158,7 +158,7 @@ def score_relevance_and_metrics(
         "     the actual answer.\n"
         "   - 0.0 means none of the important information from the expected answer is\n"
         "     present in the actual answer.\n"
-		"   - If the expected (reference) answer is empty, missing, or only whitespace, return factual_recall = 0.00.\n\n"
+		"   - HARD RULE: If the expected (reference) answer is empty, missing, or only whitespace or dot or dash, then return factual_recall = 0.00.\n\n"
         "4) Compute a FACTUAL_PRECISION score (0 to 1) comparing the actual answer to the\n"
         "   expected answer.\n"
         "   - Break the ACTUAL answer into atomic information units (as above).\n"
@@ -170,7 +170,7 @@ def score_relevance_and_metrics(
         "     what is in the expected answer.\n"
         "   - 0.0 means the actual answer only contains additional/different information\n"
         "     and does not include the factual content of the expected answer.\n"
-		"   - If the expected (reference) answer is empty, missing, or only whitespace, return factual_precision = 0.00.\n\n"
+		"   - HARD RULE: If the expected (reference) answer is empty, missing, or only whitespace  or dot or dash, then return factual_precision = 0.00.\n\n"
         "5) Compute a CONTEXT_RECALL score (0 to 1) for the chunks with respect\n"
         "   to the user query: how sufficient the chunks are to answer the query.\n"
         "   - Conceptually break the QUERY into its information requirements:\n"
@@ -283,7 +283,16 @@ def process_record(client: OpenAI, record: Dict[str, Any]) -> Dict[str, Any]:
     expected_answer: str = record.get("reference_response", "")
     actual_answer: str = record.get("actual_response", "")
 
+    if chunks is None or chunk_ids is None or chunk_scores is None:
+        print(f"Error while evaluating query: {query}")
+        raise ValueError("Chunks, chunkIds or chunkScores are null!")
+
     if not (len(chunks) == len(chunk_ids) == len(chunk_scores)):
+        l_chunks = len(chunks)
+        l_chunk_ids = len(chunk_ids)
+        l_chunks_scores = len(chunk_scores)
+        print(f"Error while evaluating query: {query}")
+        print(f"chunks length: {l_chunks}, chunk_ids length: {l_chunk_ids}, chunk_scores length: {l_chunks_scores}")
         raise ValueError("Length mismatch between chunks, chunkIds and chunkScores")
 
     (
