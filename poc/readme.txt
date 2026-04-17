@@ -1,6 +1,7 @@
 The proof of concept had the following goals:
--to see which tool is the most handy to automatically test different RAG metrics;
--reproducibility: the tests were performed with a fixed set of document chunks to see whether the metrics change if the same tests are repeated, i.e. the chunks do not come from vector stores. Nevertheless, demo_query_to_openwebuicollection.py demonstrates how to connect an existing OpenWeb UI application through an API key from where the RAG chunks could also be retrieved.
+    -to see which tool is the most handy to automatically test different RAG metrics;
+    -reproducibility
+    -own, easy-to-use tool development for computing RAG-quality metrics, with low-token consumption, after turning out that the listed tools do not qualify for our purposes, either due to costs or inaccuracies. Nevertheless, computing metrics by LLM carries in itself stochastic nature to a certain extent but increasing the number of questions to 95 and running the evaluation for each question 4 times delivers stable and trustworthy results.
 
 Setting up the environment:
 1.a) Creating a virtual environment:
@@ -45,6 +46,7 @@ Take care as the different tools can compute the metrics: recall, precision, fai
                 LOG_LEVEL=debug promptfoo eval
         g.) promptfoo view (to generate the report)
 
+Summarized Evaluation Results:
 DeepEval:
     -Very strict by default: Opel Astra vs. Open Astra in the retrieved chunks and in the actual answer: faithfulness: 0
     -Can give a reason for each metric's judgement

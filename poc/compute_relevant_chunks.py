@@ -12,6 +12,9 @@ Case A: top-level object with the following mandatory records:
       "chunks": [ "...", ... ],
       "chunkIds": [ "...", ... ],
       "chunkScores": [ 0.76, 0.73, ... ],
+      "rerankScores" : [ ... ],
+      "rerankFullResponse" : [ ... ],
+      "responseTime" : 10162,
       "reference_response": "...",
       "actual_response": "..."
     },
@@ -21,16 +24,20 @@ Case A: top-level object with the following mandatory records:
   "similarityThreshold": ...,
   "temperature": ...,
   "model": "..."
+  .... and other meta-data fields...
 }
 
 Case B: a single record object:
 {
-  "query": "...",
-  "chunks": [...],
-  "chunkIds": [...],
-  "chunkScores": [...],
-  "reference_response": "...",
-  "actual_response": "..."
+    "query": "...",
+    "chunks": [ "...", ... ],
+    "chunkIds": [ "...", ... ],
+    "chunkScores": [ 0.76, 0.73, ... ],
+    "rerankScores" : [ ... ],
+    "rerankFullResponse" : [ ... ],
+    "responseTime" : 10162,
+    "reference_response": "...",
+    "actual_response": "..."
 }
 
 Output (for each record):
@@ -67,7 +74,7 @@ from openai import OpenAI
 # ---------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------
-LLM_MODEL = "gpt-5.1-2025-11-13"  # or "gpt-4.1-mini"
+LLM_MODEL = "gpt-5.1-2025-11-13" 
 LLM_TEMPERATURE = 0.0
 SLEEP_SECONDS = 60  # sleep between input files to avoid rate limiting
 RELEVANCE_THRESHOLD = 0.50  # a chunk is counted as relevant if the relevance score exceeds this limit
@@ -98,7 +105,7 @@ def score_relevance_and_metrics(
 ) -> Tuple[List[float], float, float, float, float]:
     """
     Ask the LLM to:
-      - assign a relevance score in [0,1] for EACH chunk,
+      - assign a relevance score in the range [0,1] for EACH chunk,
       - compute faithfulness, factual_recall, factual_precision, context_recall.
 
     Returns:
@@ -280,6 +287,7 @@ def process_record(client: OpenAI, record: Dict[str, Any]) -> Dict[str, Any]:
     chunks: List[str] = record["chunks"]
     chunk_ids: List[Any] = record["chunkIds"]
     chunk_scores: List[float] = record["chunkScores"]
+    response_time = record.get("responseTime", 0) 
     expected_answer: str = record.get("reference_response", "")
     actual_answer: str = record.get("actual_response", "")
 
@@ -311,6 +319,7 @@ def process_record(client: OpenAI, record: Dict[str, Any]) -> Dict[str, Any]:
 
     result = {
         "query": query,
+        "response_time": response_time, 
         "sum_of_relevance_scores": sum_of_relevance_scores,
 
         # one score per chunk, aligned with chunkIds/chunks
@@ -329,7 +338,6 @@ def process_record(client: OpenAI, record: Dict[str, Any]) -> Dict[str, Any]:
     }
 
     return result
-
 # ---------------------------------------------------------------------
 # helper methods
 # ---------------------------------------------------------------------
@@ -377,6 +385,8 @@ def append_run_to_csv(
     factual_precision_list = [r.get("factual_precision", 0.0) for r in results]
     context_recall_list = [r.get("context_recall", 0.0) for r in results]
 
+    response_time_list = [float(r.get("response_time", 0.0) or 0.0) for r in results]
+
     # ------------------------------------------------------------------
     # Sums
     # ------------------------------------------------------------------
@@ -387,6 +397,7 @@ def append_run_to_csv(
     sum_factual_recall = sum(factual_recall_list)
     sum_factual_precision = sum(factual_precision_list)
     sum_context_recall = sum(context_recall_list)
+    sum_response_time = sum(response_time_list)
 
     # ------------------------------------------------------------------
     # Averages
@@ -398,6 +409,7 @@ def append_run_to_csv(
     avg_factual_recall = sum_factual_recall / n
     avg_factual_precision = sum_factual_precision / n
     avg_context_recall = sum_context_recall / n
+    avg_response_time = sum_response_time / n
 
     # ------------------------------------------------------------------
     # Medians
@@ -409,6 +421,7 @@ def append_run_to_csv(
     median_factual_recall = statistics.median(factual_recall_list)
     median_factual_precision = statistics.median(factual_precision_list)
     median_context_recall = statistics.median(context_recall_list)
+    median_response_time = statistics.median(response_time_list)
 
     # ------------------------------------------------------------------
     # Standard deviations (population std, pstdev -> 0.0 if n == 1)
@@ -420,6 +433,7 @@ def append_run_to_csv(
     std_factual_recall = statistics.pstdev(factual_recall_list)
     std_factual_precision = statistics.pstdev(factual_precision_list)
     std_context_recall = statistics.pstdev(context_recall_list)
+    std_response_time = statistics.pstdev(response_time_list)
 
     file_exists = csv_path.exists()
     with csv_path.open("a", newline="", encoding="utf-8") as f:
@@ -457,6 +471,10 @@ def append_run_to_csv(
                     "avg_context_recall",
                     "median_context_recall",
                     "std_context_recall",
+                    "sum_response_time",
+                    "avg_response_time",
+                    "median_response_time",
+                    "std_response_time",
                 ]
             )
         writer.writerow(
@@ -491,9 +509,12 @@ def append_run_to_csv(
                 round(avg_context_recall, 2),
                 round(median_context_recall, 2),
                 round(std_context_recall, 2),
+                round(sum_response_time, 2),
+                round(avg_response_time, 2),
+                round(median_response_time, 2),
+                round(std_response_time, 2),
             ]
         )
-
 
 def process_input_file(
     input_path: Path,
@@ -570,7 +591,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description=(
             "Compute relevant chunks and LLM-based metrics "
-            "(faithfulness, factual_recall, factual_precision, context_recall) "
+            "(relevance scores, faithfulness, factual_recall, factual_precision, context_recall) "
             "per query using a single LLM call per record.\n"
             "You can either:\n"
             "  - use --input/--output for a single file, OR\n"
