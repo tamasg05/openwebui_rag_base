@@ -26,3 +26,7 @@ ragas_eval_large_amount_of_data.py
 ragas_eval_large_amount_of_data2.py
 compare_chunk_ids.py
 test_api.py
+
+# === Excluding non-public data
+poc/prompts_and_answer_quality/*.txt
+poc/prompts_and_answer_quality/*.json
