@@ -2,8 +2,10 @@ import argparse
 import json
 import os
 from pathlib import Path
-from openai import OpenAI
+
 from dotenv import load_dotenv
+from openai import OpenAI
+
 
 load_dotenv()
 
@@ -163,7 +165,7 @@ Your task is to assess how well the assistant answers in the provided dialog com
 
 You must evaluate the assistant answers in the dialog, not the user messages.
 
-Use the following grading scale:
+Use the following overall grading scale:
 
 5 = Complete match. The assistant answers fully comply with the applicable system prompt or prompts.
 4 = Good match. Mostly compliant, with only minor issues.
@@ -172,6 +174,73 @@ Use the following grading scale:
 1 = Very poor match. The assistant answers largely fail to follow the applicable prompt or prompts.
 
 You may assign integer values only: 1, 2, 3, 4, or 5.
+
+In addition to the overall evaluation, evaluate the dialog using the detailed metrics below.
+
+Detailed metric scoring rules:
+- Use a score from 1 to 5.
+- 5 means excellent compliance with the metric.
+- 4 means good compliance with only minor issues.
+- 3 means partial compliance.
+- 2 means poor compliance.
+- 1 means very poor compliance.
+- If a metric is not applicable to the dialog, set "applicable" to false and "score" to null.
+- If a metric is applicable, set "applicable" to true and "score" to an integer from 1 to 5.
+- Always provide a short explanation for each metric.
+
+Detailed metrics:
+
+1. language_compliance
+Category: Basic rule following.
+Question: Did the assistant answer in exactly the same language as the user's most recent question?
+Scoring: 1 = completely different language, 5 = perfect language match.
+Prompt source: Global #1.
+
+2. service_advice_handling
+Category: Basic rule following.
+Question: When the user asked for service-related advice, did the assistant correctly refuse to provide the service advice and instead offer service appointment booking with the appropriate CTA?
+If the user did not ask for service-related advice, this metric is not applicable.
+Prompt source: Global #3.
+
+3. knowledge_boundary_handling
+Category: Content relevance.
+Question: If the provided context/chunks did not contain the answer, did the assistant politely state this and proactively offer a relevant alternative CTA instead of giving incorrect or unsupported information?
+If there is no indication that the answer was missing from the context/chunks, mark this metric as not applicable.
+Prompt source: Global #4.
+
+4. domain_control
+Category: Content relevance.
+Question: If the user asked a question outside the brand or automotive domain, did the assistant politely steer the conversation back to the relevant topic instead of answering the irrelevant question?
+If the user did not ask an out-of-domain question, this metric is not applicable.
+Prompt source: Global #5.
+
+5. conversation_context_retention
+Category: Content relevance.
+Question: Did the assistant answer take into account earlier parts of the conversation? Did it correctly interpret pronouns and references such as "it", "that", "this", or follow-up questions based on the previous dialog?
+Scoring: 1 = completely ignores context, 5 = perfectly understands and uses the context.
+Prompt source: Global #2, chat history.
+
+6. cta_relevance_and_proactivity
+Category: Business goals and style.
+Question: Did the assistant offer a CTA appropriate to the user's intent, such as requesting a quote, booking a test drive, or booking a service appointment, at the appropriate point in the conversation?
+If no CTA would reasonably be expected in the dialog, set "applicable" to false and "score" to null.
+Prompt source: Local #3.
+
+7. style_and_tone
+Category: Business goals and style.
+Question: Was the assistant's tone professional, friendly, and helpful? Did it comply with the specific style rules from the local prompt, such as informal/formal address, no emojis, and greeting only once?
+Prompt source: Global #3, Local #4.
+
+8. answer_length
+Category: Business goals and style.
+Question: Did the assistant answers stay within the required 100-150 token range?
+Scoring: 1 = drastically exceeded or fell short of the limit, 5 = perfectly complied.
+Prompt source: Global #3.
+
+Important:
+- The detailed metric scores do not replace the overall "mark".
+- The overall "mark" should still summarize the overall compliance with the global and local prompts.
+- The detailed metrics should make the judgement more transparent.
 
 In addition to evaluating compliance, propose improved prompt versions.
 
@@ -195,23 +264,68 @@ The JSON format must be:
 
 {{
   "mark": 1,
-  "judgement": "Short textual explanation of the assessment.",
+  "judgement": "Short textual explanation of the overall assessment.",
   "global_prompt_compliance": "Short explanation.",
   "local_prompt_compliance": "Short explanation.",
   "main_issues": [
     "Issue 1",
     "Issue 2"
   ],
+  "detailed_metrics": {{
+    "language_compliance": {{
+      "score": 5,
+      "applicable": true,
+      "explanation": "Short explanation."
+    }},
+    "service_advice_handling": {{
+      "score": null,
+      "applicable": false,
+      "explanation": "Short explanation."
+    }},
+    "knowledge_boundary_handling": {{
+      "score": null,
+      "applicable": false,
+      "explanation": "Short explanation."
+    }},
+    "domain_control": {{
+      "score": null,
+      "applicable": false,
+      "explanation": "Short explanation."
+    }},
+    "conversation_context_retention": {{
+      "score": 5,
+      "applicable": true,
+      "explanation": "Short explanation."
+    }},
+    "cta_relevance_and_proactivity": {{
+      "score": null,
+      "applicable": false,
+      "explanation": "Short explanation."
+    }},
+    "style_and_tone": {{
+      "score": 5,
+      "applicable": true,
+      "explanation": "Short explanation."
+    }},
+    "answer_length": {{
+      "score": 5,
+      "applicable": true,
+      "explanation": "Short explanation."
+    }}
+  }},
   "improved_global_prompt": "Improved version of the global system prompt. Use exactly 'No change proposed.' if no improvement is needed.",
   "improved_global_prompt_explanation": "Explanation of what changed compared to the original global prompt, or why no change was needed.",
   "improved_local_prompt": "Improved version of the local system prompt. Use exactly 'No change proposed.' if no improvement is needed. Empty string if no local prompt was provided.",
   "improved_local_prompt_explanation": "Explanation of what changed compared to the original local prompt, or why no change was needed. Empty string if no local prompt was provided."
 }}
 
-Important rules:
+Important JSON rules:
 - Return JSON only.
 - Do not wrap the JSON in Markdown.
 - The "mark" field must be an integer from 1 to 5.
+- Every detailed metric must be present.
+- For every applicable detailed metric, "score" must be an integer from 1 to 5.
+- For every non-applicable detailed metric, "score" must be null and "applicable" must be false.
 - If the global system prompt needs no improvement, "improved_global_prompt" must be exactly "No change proposed.".
 - If the global system prompt needs no improvement, "improved_global_prompt_explanation" must explain why no change was necessary.
 - If a local system prompt was provided and no improvement is needed, "improved_local_prompt" must be exactly "No change proposed.".
@@ -269,6 +383,70 @@ def call_llm(evaluation_prompt: str) -> dict:
         ) from exc
 
 
+def validate_detailed_metrics(result: dict) -> None:
+    """
+    Validates the detailed_metrics block.
+    """
+
+    if "detailed_metrics" not in result:
+        raise ValueError('Missing key in LLM response: "detailed_metrics"')
+
+    detailed_metrics = result["detailed_metrics"]
+
+    if not isinstance(detailed_metrics, dict):
+        raise ValueError('"detailed_metrics" must be an object.')
+
+    required_metric_keys = {
+        "language_compliance",
+        "service_advice_handling",
+        "knowledge_boundary_handling",
+        "domain_control",
+        "conversation_context_retention",
+        "cta_relevance_and_proactivity",
+        "style_and_tone",
+        "answer_length",
+    }
+
+    missing_metrics = required_metric_keys - detailed_metrics.keys()
+    if missing_metrics:
+        raise ValueError(f"Missing detailed metrics: {missing_metrics}")
+
+    for metric_name in required_metric_keys:
+        metric = detailed_metrics[metric_name]
+
+        if not isinstance(metric, dict):
+            raise ValueError(f'Metric "{metric_name}" must be an object.')
+
+        required_fields = {"score", "applicable", "explanation"}
+        missing_fields = required_fields - metric.keys()
+        if missing_fields:
+            raise ValueError(
+                f'Metric "{metric_name}" is missing fields: {missing_fields}'
+            )
+
+        applicable = metric["applicable"]
+        score = metric["score"]
+        explanation = metric["explanation"]
+
+        if not isinstance(applicable, bool):
+            raise ValueError(f'"{metric_name}.applicable" must be a boolean.')
+
+        if applicable:
+            if not isinstance(score, int) or score < 1 or score > 5:
+                raise ValueError(
+                    f'"{metric_name}.score" must be an integer between 1 and 5 '
+                    f"when applicable is true. Got: {score}"
+                )
+        else:
+            if score is not None:
+                raise ValueError(
+                    f'"{metric_name}.score" must be null when applicable is false.'
+                )
+
+        if not isinstance(explanation, str):
+            raise ValueError(f'"{metric_name}.explanation" must be a string.')
+
+
 def validate_result(result: dict, has_local_prompt: bool) -> None:
     """
     Performs basic validation of the evaluator output.
@@ -280,6 +458,7 @@ def validate_result(result: dict, has_local_prompt: bool) -> None:
         "global_prompt_compliance",
         "local_prompt_compliance",
         "main_issues",
+        "detailed_metrics",
         "improved_global_prompt",
         "improved_global_prompt_explanation",
         "improved_local_prompt",
@@ -310,6 +489,8 @@ def validate_result(result: dict, has_local_prompt: bool) -> None:
     for key in string_keys:
         if not isinstance(result[key], str):
             raise ValueError(f"'{key}' must be a string.")
+
+    validate_detailed_metrics(result)
 
     if not has_local_prompt:
         if result["improved_local_prompt"] != "":
