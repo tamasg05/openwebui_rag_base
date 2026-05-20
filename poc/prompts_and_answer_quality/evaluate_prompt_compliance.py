@@ -25,16 +25,16 @@ def parse_args() -> argparse.Namespace:
         epilog="""
 Examples:
 
-  python assess_prompt_compliance.py \\
+  python evaluate_prompt_compliance.py \\
     --global-prompt-file global_prompt.txt \\
     --local-system-prompt-file local_system_prompt.txt \\
     --qa-dialog-file qa_dialog.txt
 
-  python assess_prompt_compliance.py \\
+  python evaluate_prompt_compliance.py \\
     --global-prompt-file global_prompt.txt \\
     --qa-dialog-file qa_dialog.txt
 
-  python assess_prompt_compliance.py \\
+  python evaluate_prompt_compliance.py \\
     --global-prompt-file prompts/global_prompt.txt \\
     --local-system-prompt-file prompts/local_system_prompt.txt \\
     --qa-dialog-file dialogs/qa_dialog.txt \\
@@ -42,7 +42,7 @@ Examples:
 
 On Windows PowerShell, use backticks for line continuation:
 
-  python assess_prompt_compliance.py `
+  python evaluate_prompt_compliance.py `
     --global-prompt-file global_prompt.txt `
     --local-system-prompt-file local_system_prompt.txt `
     --qa-dialog-file qa_dialog.txt `
@@ -165,8 +165,15 @@ Your task is to assess how well the assistant answers in the provided dialog com
 
 You must evaluate the assistant answers in the dialog, not the user messages.
 
-Use the following overall grading scale:
+Important limitation of this evaluation:
+- The actual runtime document chunks used by the evaluated assistant are NOT included in this evaluation input.
+- The global and local prompts may contain placeholders or instructions showing where chunks are normally inserted, but the concrete chunks used during the original dialog are not available here.
+- Therefore, you must NOT penalize the assistant merely because it provides factual, numerical, or technical information that is not visible in this evaluation input.
+- Such information may have come from runtime chunks that are not stored in the dialog.
+- Do NOT call an answer hallucinated or unsupported solely because the evaluator cannot see the original chunks.
+- You may only penalize factual grounding if the dialog itself contains clear evidence of fabrication, contradiction, or refusal to respect an explicitly stated knowledge boundary.
 
+Use the following overall grading scale:
 5 = Complete match. The assistant answers fully comply with the applicable system prompt or prompts.
 4 = Good match. Mostly compliant, with only minor issues.
 3 = Partial match. Some important requirements are followed, but there are noticeable omissions or inconsistencies.
@@ -174,6 +181,13 @@ Use the following overall grading scale:
 1 = Very poor match. The assistant answers largely fail to follow the applicable prompt or prompts.
 
 You may assign integer values only: 1, 2, 3, 4, or 5.
+
+When assigning the overall "mark":
+- Do not reduce the overall mark because factual details are not visible in this evaluation input.
+- The evaluator does not have access to the actual runtime chunks.
+- Treat factual details in the assistant answer as potentially grounded in unseen runtime chunks unless the dialog itself clearly proves otherwise.
+- Focus the overall mark on observable behavior: language, tone, CTA usage, domain control, service-advice handling, context retention, answer length, and explicit prompt-rule violations visible from the dialog.
+
 
 In addition to the overall evaluation, evaluate the dialog using the detailed metrics below.
 
@@ -187,6 +201,8 @@ Detailed metric scoring rules:
 - If a metric is not applicable to the dialog, set "applicable" to false and "score" to null.
 - If a metric is applicable, set "applicable" to true and "score" to an integer from 1 to 5.
 - Always provide a short explanation for each metric.
+- For metrics that depend on unavailable runtime chunks, do not infer failure from absence of evidence. Mark the metric as not applicable unless the dialog itself provides clear evidence of non-compliance.
+
 
 Detailed metrics:
 
@@ -204,8 +220,20 @@ Prompt source: Global #3.
 
 3. knowledge_boundary_handling
 Category: Content relevance.
-Question: If the provided context/chunks did not contain the answer, did the assistant politely state this and proactively offer a relevant alternative CTA instead of giving incorrect or unsupported information?
-If there is no indication that the answer was missing from the context/chunks, mark this metric as not applicable.
+Question: Did the assistant respect knowledge boundaries when there was clear evidence in the dialog that required information was unavailable?
+
+Important evaluation limitation:
+The actual runtime chunks are not included in this evaluation input. Therefore, do NOT assume that factual or numerical claims are unsupported merely because the chunks are absent here.
+
+Set this metric to not applicable if:
+- the dialog does not explicitly show that the required information was missing, and
+- the actual runtime chunks are not available to the evaluator.
+
+Set this metric to applicable only if:
+- the assistant itself states or clearly implies that it lacks the required information but still invents an answer, or
+- the dialog contains an explicit indication that no relevant context was available, or
+- the assistant contradicts itself or the visible prompt rules in a way that is independent of missing chunks.
+
 Prompt source: Global #4.
 
 4. domain_control

@@ -21,6 +21,10 @@ output/
 output2/
 ids/
 
+# == Excluding all prompt and test data except the evaluator script for prompt alignment
+/poc/prompts_and_answer_quality/*
+!/poc/prompts_and_answer_quality/evaluate_prompt_compliance.py
+
 # === Excluding scripts not relevant for the demo
 ragas_eval_large_amount_of_data.py
 ragas_eval_large_amount_of_data2.py
